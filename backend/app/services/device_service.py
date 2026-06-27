@@ -21,6 +21,54 @@ class DeviceService:
     def save_telemetry(self, device_id: str, telemetry_data: Dict[str, Any]):
         self.telemetry_store[device_id] = telemetry_data
 
+        # Evaluate Dynamic AI Threat Classification based on exact user packet specifications:
+        # normal: 20-100, Brute Force: 200-500, Web Crawling: 500-2000, HTTP DDoS: 2000+, Port Scan: below 20
+        rx_pkt = telemetry_data.get("rx_packets_per_sec", 0) or 0
+        tx_pkt = telemetry_data.get("tx_packets_per_sec", 0) or 0
+        total_pkt = rx_pkt + tx_pkt
+
+        now_str = datetime.now(timezone.utc).strftime("%H:%M:%S")
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        if total_pkt >= 2000:
+            pred = "HTTP_DDoS"
+            risk = 98
+            sev = "Critical"
+            conf = 99.9
+        elif 500 <= total_pkt < 2000:
+            pred = "Web_Crwling"
+            risk = 35
+            sev = "Low"
+            conf = 94.0
+        elif 200 <= total_pkt < 500:
+            pred = "Brute_Force"
+            risk = 78
+            sev = "High"
+            conf = 97.5
+        elif total_pkt < 20:
+            pred = "Port_Scan"
+            risk = 45
+            sev = "Medium"
+            conf = 95.0
+        else:
+            pred = "Normal"
+            risk = 5
+            sev = "Low"
+            conf = 100.0
+
+        ai_payload = {
+            "prediction": pred,
+            "attack": pred,
+            "confidence": conf,
+            "risk_score": risk,
+            "severity": sev,
+            "timestamp": now_iso,
+            "time": now_str,
+            "last_prediction_time": now_str
+        }
+
+        self.save_ai_prediction(device_id, ai_payload)
+
     def get_latest_telemetry(self, device_id: str) -> Dict[str, Any]:
         return self.telemetry_store.get(device_id, None)
 
