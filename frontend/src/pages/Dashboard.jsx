@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { GlassCard } from '../components/GlassCard';
@@ -29,7 +29,6 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-
 import { apiService } from '../services/api';
 import AiHistoryTable from '../components/AiHistoryTable';
 import NetworkFeaturePanel from '../components/NetworkFeaturePanel';
@@ -45,8 +44,15 @@ export const Dashboard = () => {
   const [connectedDevices, setConnectedDevices] = useState(1);
   const [registeredDevices, setRegisteredDevices] = useState([]);
   const [selectedDeviceIndex, setSelectedDeviceIndex] = useState(0);
+  const selectedDeviceIndexRef = useRef(selectedDeviceIndex);
+
+  useEffect(() => {
+    selectedDeviceIndexRef.current = selectedDeviceIndex;
+  }, [selectedDeviceIndex]);
+
   const [telemetryData, setTelemetryData] = useState(null);
   const [deviceTelemetryMap, setDeviceTelemetryMap] = useState({});
+  const [deviceAiMap, setDeviceAiMap] = useState({});
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   // Phase 5 AI Detection State
@@ -132,40 +138,42 @@ export const Dashboard = () => {
       if (devices && Array.isArray(devices) && devices.length > 0) {
         setRegisteredDevices(devices);
         setConnectedDevices(devices.length);
-        const idx = selectedDeviceIndex < devices.length ? selectedDeviceIndex : 0;
-        const activeDev = devices[idx];
+        const currentIdx = selectedDeviceIndexRef.current < devices.length ? selectedDeviceIndexRef.current : 0;
+        const activeDev = devices[currentIdx];
         
         const telem = await apiService.getDeviceTelemetry(activeDev.device_id);
         setTelemetryData(telem);
 
         const mapAcc = {};
+        const aiAcc = {};
         for (const dev of devices) {
           const t = await apiService.getDeviceTelemetry(dev.device_id);
           if (t) mapAcc[dev.device_id] = t;
+          const p = await apiService.getAiPrediction(dev.device_id);
+          if (p) aiAcc[dev.device_id] = p;
         }
         setDeviceTelemetryMap(mapAcc);
+        setDeviceAiMap(aiAcc);
 
-        // Fetch AI prediction & history if online
-        if (activeDev.status === 'Online') {
-          const aiPred = await apiService.getAiPrediction(activeDev.device_id);
-          if (aiPred) {
-            setAiData(aiPred);
-            if (aiPred.risk_score !== undefined) setThreatScore(aiPred.risk_score);
+        // Fetch AI prediction & history for active selected device
+        const activeAi = aiAcc[activeDev.device_id] || await apiService.getAiPrediction(activeDev.device_id);
+        if (activeAi) {
+          setAiData(activeAi);
+          if (activeAi.risk_score !== undefined) setThreatScore(activeAi.risk_score);
 
-            // Add to live timeline (last 10)
-            const timeStr = aiPred.last_prediction_time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            setAiTimeline((prev) => {
-              const item = { time: timeStr, prediction: aiPred.prediction, severity: aiPred.severity };
-              return [item, ...prev.slice(0, 9)];
-            });
-          }
-
-          const aiHist = await apiService.getAiHistory(activeDev.device_id);
-          if (aiHist && Array.isArray(aiHist)) {
-            setAiHistoryLogs(aiHist);
-          }
-          setAiLoading(false);
+          // Add to live timeline (last 10)
+          const timeStr = activeAi.last_prediction_time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          setAiTimeline((prev) => {
+            const item = { time: timeStr, prediction: activeAi.prediction, severity: activeAi.severity };
+            return [item, ...prev.slice(0, 9)];
+          });
         }
+
+        const aiHist = await apiService.getAiHistory(activeDev.device_id);
+        if (aiHist && Array.isArray(aiHist)) {
+          setAiHistoryLogs(aiHist);
+        }
+        setAiLoading(false);
 
         // Fetch developer network feature extraction statistics & vector
         const nStats = await apiService.getNetworkStats();
@@ -410,11 +418,16 @@ export const Dashboard = () => {
             </div>
           )}
 
-          <div>
-            <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-cyan-400 flex items-center gap-1.5">
-              <BrainCircuit className="w-3.5 h-3.5" /> AI Risk Evaluation
+          <div className="flex justify-between items-start">
+            <div>
+              <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-cyan-400 flex items-center gap-1.5">
+                <BrainCircuit className="w-3.5 h-3.5" /> AI Risk Evaluation
+              </span>
+              <h2 className="text-xl font-bold font-display text-slate-100">Threat Score Gauge</h2>
+            </div>
+            <span className="text-[10px] font-mono font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2.5 py-1 rounded-full">
+              Evaluating: {(registeredDevices[selectedDeviceIndex] || registeredDevices[0])?.hostname || 'Mac.lan'}
             </span>
-            <h2 className="text-xl font-bold font-display text-slate-100">Threat Score Gauge</h2>
           </div>
 
           {aiLoading && registeredDevices[0]?.status === 'Online' ? (
