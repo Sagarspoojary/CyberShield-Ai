@@ -257,7 +257,8 @@ export const Dashboard = () => {
       </div>
 
       {/* Multi-Device Separate Telemetry Displays Container */}
-      <div className="flex flex-col gap-4">
+      {/* Multi-Device Dedicated Telemetry & AI Evaluation Panels */}
+      <div className="flex flex-col gap-6">
         {registeredDevices.length === 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <GlassCard tiltEffect={true} className="p-5 flex flex-col justify-between gap-3">
@@ -267,30 +268,49 @@ export const Dashboard = () => {
         ) : (
           registeredDevices.map((dev, devIdx) => {
             const devTelem = deviceTelemetryMap[dev.device_id] || (devIdx === selectedDeviceIndex ? telemetryData : null);
+            const devAi = deviceAiMap[dev.device_id] || (devIdx === selectedDeviceIndex ? aiData : { prediction: "Normal", confidence: 100.0, risk_score: 5, severity: "Low" });
+            const devTimeline = deviceAiTimelineMap[dev.device_id] || (devIdx === selectedDeviceIndex ? aiTimeline : []);
+            const devScore = devAi.risk_score !== undefined ? devAi.risk_score : 5;
             const isOnline = dev.status === 'Online';
             const isSelected = devIdx === selectedDeviceIndex;
+
+            const summaryInfo = (() => {
+              const pred = devAi.prediction || devAi.attack || 'Normal';
+              switch (pred) {
+                case 'HTTP_DDoS':
+                  return { summary: 'Massive packet flood detected (>2,000 pkts). Rate limiting active.', badgeColor: 'bg-rose-500/20 text-rose-400 border-rose-500/30' };
+                case 'Port_Scan':
+                  return { summary: 'Rapid port probing detected (<20 pkts). Firewall logging active.', badgeColor: 'bg-amber-500/20 text-amber-400 border-amber-500/30' };
+                case 'Brute_Force':
+                  return { summary: 'Auth stuffing detected (200-500 pkts). Account lockout active.', badgeColor: 'bg-orange-500/20 text-orange-400 border-orange-500/30' };
+                case 'Web_Crwling':
+                  return { summary: 'Web scraping detected (500-2,000 pkts). Request throttling active.', badgeColor: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' };
+                default:
+                  return { summary: 'System traffic operating normally within standard baseline limits.', badgeColor: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' };
+              }
+            })();
 
             return (
               <div
                 key={dev.device_id || devIdx}
                 onClick={() => setSelectedDeviceIndex(devIdx)}
-                className={`flex flex-col gap-2 p-3 rounded-2xl border transition-all cursor-pointer ${
+                className={`flex flex-col gap-3 p-4 rounded-2xl border transition-all cursor-pointer ${
                   isSelected
-                    ? 'border-cyan-500/30 bg-slate-900/40 shadow-[0_0_20px_rgba(6,182,212,0.1)]'
-                    : 'border-white/5 bg-slate-950/20 hover:border-white/10'
+                    ? 'border-cyan-500/40 bg-slate-900/50 shadow-[0_0_25px_rgba(6,182,212,0.12)]'
+                    : 'border-white/5 bg-slate-950/30 hover:border-white/10'
                 }`}
               >
                 {/* Device Header Strip */}
-                <div className="flex items-center justify-between px-2 pt-1">
+                <div className="flex items-center justify-between px-1">
                   <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-                    <span className="text-xs font-bold font-mono text-slate-100 uppercase tracking-wider">
+                    <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
+                    <span className="text-sm font-bold font-mono text-slate-100 uppercase tracking-wider">
                       Endpoint Device #{devIdx + 1}: <span className="text-cyan-400 font-extrabold">{dev.hostname}</span> ({dev.os})
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 text-[10px] font-mono">
+                  <div className="flex items-center gap-3 text-xs font-mono">
                     <span className="text-slate-400">IP: <span className="text-slate-200">{dev.ip || '127.0.0.1'}</span></span>
-                    <span className={`px-2 py-0.5 rounded-full font-bold border ${
+                    <span className={`px-2.5 py-0.5 rounded-full font-bold border ${
                       isOnline ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
                     }`}>
                       {isOnline ? '🟢 ONLINE' : '🔴 OFFLINE'}
@@ -298,8 +318,8 @@ export const Dashboard = () => {
                   </div>
                 </div>
 
-                {/* Separate Telemetry Cards Row for this specific device */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* 4-Card Grid: Hardware, Packets, Speed & AI Risk Evaluation */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* Card 1: System Hardware */}
                   <GlassCard tiltEffect={false} className="p-4 flex flex-col justify-between gap-2 bg-slate-900/60">
                     <div className="flex justify-between items-center">
@@ -312,7 +332,7 @@ export const Dashboard = () => {
                       <span className="text-2xl font-extrabold font-mono text-emerald-400">
                         {isOnline && devTelem ? `${devTelem.cpu_percent}%` : '--'} <span className="text-xs font-sans text-slate-400">CPU</span>
                       </span>
-                      <span className="text-xs text-slate-400 font-mono mt-0.5">
+                      <span className="text-xs text-slate-400 font-mono mt-1">
                         RAM: {isOnline && devTelem ? `${devTelem.ram_percent}%` : '--'} | Disk: {isOnline && devTelem ? `${devTelem.disk_percent}%` : '--'}
                       </span>
                     </div>
@@ -335,7 +355,7 @@ export const Dashboard = () => {
                           ↑ {isOnline && devTelem ? `${devTelem.tx_packets_per_sec ?? 0} pkt/s` : '0 pkt/s'}
                         </span>
                       </div>
-                      <span className="text-[11px] text-slate-400 font-mono mt-0.5">
+                      <span className="text-[11px] text-slate-400 font-mono mt-1">
                         Total: RX {devTelem ? (devTelem.formatted_packets_recv || devTelem.packets_recv) : '--'} | TX {devTelem ? (devTelem.formatted_packets_sent || devTelem.packets_sent) : '--'}
                       </span>
                     </div>
@@ -353,8 +373,41 @@ export const Dashboard = () => {
                       <span className="text-2xl font-extrabold font-mono text-slate-100">
                         {isOnline && devTelem ? devTelem.download_speed : '0 KB/s'}
                       </span>
-                      <span className="text-xs text-indigo-400 font-mono mt-0.5">
+                      <span className="text-xs text-indigo-400 font-mono mt-1">
                         Upload: {isOnline && devTelem ? devTelem.upload_speed : '0 KB/s'}
+                      </span>
+                    </div>
+                  </GlassCard>
+
+                  {/* Card 4: Dedicated AI Risk Evaluation for THIS Device */}
+                  <GlassCard tiltEffect={false} className="p-4 flex flex-col justify-between gap-2 bg-slate-900/80 border-cyan-500/20">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-cyan-400 flex items-center gap-1">
+                        <BrainCircuit className="w-3.5 h-3.5" /> AI Risk Evaluation
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold border ${summaryInfo.badgeColor}`}>
+                        {devAi.prediction || devAi.attack || 'Normal'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col">
+                        <span className={`text-xl font-extrabold font-mono ${
+                          devScore >= 85 ? 'text-rose-500' : devScore >= 60 ? 'text-orange-400' : devScore >= 30 ? 'text-amber-400' : 'text-cyan-400'
+                        }`}>
+                          {devScore} <span className="text-xs font-sans text-slate-400">/ 100 Risk</span>
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono mt-0.5">
+                          Status: <span className={(devAi.prediction || 'Normal') === 'Normal' ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold animate-pulse'}>
+                            {(devAi.prediction || 'Normal') === 'Normal' ? '🟢 Safe' : '🔴 Threat'}
+                          </span>
+                        </span>
+                      </div>
+                      <span className={`px-2 py-1 rounded text-[10px] font-mono font-bold uppercase border ${
+                        devAi.severity?.toLowerCase() === 'critical' ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' :
+                        devAi.severity?.toLowerCase() === 'high' ? 'bg-orange-500/10 border-orange-500/20 text-orange-400' :
+                        devAi.severity?.toLowerCase() === 'medium' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                      }`}>
+                        {devAi.severity || 'Low'}
                       </span>
                     </div>
                   </GlassCard>
@@ -365,253 +418,70 @@ export const Dashboard = () => {
         )}
       </div>
 
-      {/* Middle Section: Live Chart & Threat Gauge */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Live Network Traffic Chart (Recharts) */}
-        <GlassCard tiltEffect={true} className="p-6 lg:col-span-2 flex flex-col justify-between gap-6 min-h-[360px]">
-          <div className="flex justify-between items-center">
-            <div>
-              <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-cyan-400">
-                Real-Time Telemetry
-              </span>
-              <h2 className="text-xl font-bold font-display text-slate-100">Live Network Traffic Analysis</h2>
-            </div>
-            <div className="flex items-center gap-4 text-xs font-mono">
-              <span className="flex items-center gap-1.5 text-cyan-400">
-                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" /> Normal Stream
-              </span>
-              <span className="flex items-center gap-1.5 text-purple-400">
-                <span className="w-2.5 h-2.5 rounded-full bg-purple-400" /> Threat Vector
-              </span>
-            </div>
+      {/* Full Width Live Network Traffic Chart */}
+      <GlassCard tiltEffect={true} className="p-6 flex flex-col justify-between gap-6 min-h-[360px]">
+        <div className="flex justify-between items-center">
+          <div>
+            <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-cyan-400">
+              Real-Time Telemetry
+            </span>
+            <h2 className="text-xl font-bold font-display text-slate-100">Live Network Traffic Analysis</h2>
           </div>
-
-          <div className="w-full h-[450px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorNormal" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorThreat" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#a855f7" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="time" stroke="#64748b" fontSize={10} tickLine={false} />
-                <YAxis stroke="#64748b" fontSize={10} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                    borderRadius: '12px',
-                    backdropFilter: 'blur(10px)',
-                    fontSize: '12px',
-                  }}
-                />
-                <Area type="monotone" dataKey="normal" stroke="#06b6d4" strokeWidth={2} fillOpacity={1} fill="url(#colorNormal)" />
-                <Area type="monotone" dataKey="threat" stroke="#a855f7" strokeWidth={2} fillOpacity={1} fill="url(#colorThreat)" />
-              </AreaChart>
-            </ResponsiveContainer>
+          <div className="flex items-center gap-4 text-xs font-mono">
+            <span className="flex items-center gap-1.5 text-cyan-400">
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" /> Normal Stream
+            </span>
+            <span className="flex items-center gap-1.5 text-purple-400">
+              <span className="w-2.5 h-2.5 rounded-full bg-purple-400" /> Threat Vector
+            </span>
           </div>
-
-          {/* Export / Incident Report Action Footer */}
-          <div className="pt-3 border-t border-white/5 flex items-center justify-between">
-            <div className="flex flex-col">
-              <span className="text-xs font-bold font-mono text-slate-200">Export SOC Analysis Report</span>
-              <span className="text-[10px] font-mono text-slate-400">Generate structured PDF/JSON incident audit report for connected devices</span>
-            </div>
-            <GlassButton
-              onClick={() => window.print()}
-              className="px-5 py-2.5 text-xs font-mono bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 shadow-[0_0_15px_rgba(6,182,212,0.3)]"
-              icon={FileCheck}
-            >
-              Generate Incident Report
-            </GlassButton>
-          </div>
-        </GlassCard>
-
-        {/* Dedicated Separate AI Risk Evaluation Cards per Connected Device */}
-        <div className="flex flex-col gap-6">
-          {registeredDevices.length === 0 ? (
-            <GlassCard tiltEffect={true} className="p-6 flex flex-col items-center justify-center min-h-[300px]">
-              <span className="text-sm font-mono text-slate-400">No registered endpoints online</span>
-            </GlassCard>
-          ) : (
-            registeredDevices.map((dev, dIdx) => {
-              const dAi = deviceAiMap[dev.device_id] || (dIdx === selectedDeviceIndex ? aiData : { prediction: "Normal", confidence: 100.0, risk_score: 5, severity: "Low" });
-              const dTimeline = deviceAiTimelineMap[dev.device_id] || (dIdx === selectedDeviceIndex ? aiTimeline : []);
-              const dScore = dAi.risk_score !== undefined ? dAi.risk_score : 5;
-              const isDevOnline = dev.status === 'Online';
-
-              const summaryInfo = (() => {
-                const pred = dAi.prediction || dAi.attack || 'Normal';
-                switch (pred) {
-                  case 'HTTP_DDoS':
-                    return {
-                      summary: 'Massive packet flood detected (>2,000 pkts). Rapid HTTP requests threaten socket availability. Rate limiting & WAF rules enabled.',
-                      action: 'Rate Limiting & WAF Block Active',
-                      badgeColor: 'bg-rose-500/20 text-rose-400 border-rose-500/30'
-                    };
-                  case 'Port_Scan':
-                    return {
-                      summary: 'Rapid port probing detected (<20 pkts band with SYN flags). Host scanning attempt identified. Firewall logging elevated.',
-                      action: 'Source IP Firewall Logging Active',
-                      badgeColor: 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-                    };
-                  case 'Brute_Force':
-                    return {
-                      summary: 'Authentication POST attempts detected (200-500 pkts band). Repeated socket handshakes target login endpoints.',
-                      action: 'Account Lockout & MFA Active',
-                      badgeColor: 'bg-orange-500/20 text-orange-400 border-orange-500/30'
-                    };
-                  case 'Web_Crwling':
-                    return {
-                      summary: 'Multi-page web scraping detected (500-2,000 pkts band). High subflow byte volume transferred across documentation routes.',
-                      action: 'Subflow Request Throttling Active',
-                      badgeColor: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30'
-                    };
-                  default:
-                    return {
-                      summary: 'System traffic operating normally within standard baseline limits (20-100 pkts). No anomalies detected.',
-                      action: 'Continuous SOC Monitoring Active',
-                      badgeColor: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                    };
-                }
-              })();
-
-              return (
-                <GlassCard key={dev.device_id || dIdx} tiltEffect={true} className="p-6 flex flex-col justify-between gap-5 relative overflow-hidden">
-                  {!isDevOnline && (
-                    <div className="absolute inset-0 z-20 backdrop-blur-md bg-slate-950/80 rounded-2xl flex flex-col items-center justify-center p-6 text-center gap-3 border border-white/10">
-                      <ShieldAlert className="w-10 h-10 text-amber-400 animate-pulse" />
-                      <span className="text-lg font-extrabold font-mono text-slate-100">AI Engine Paused ({dev.hostname})</span>
-                      <span className="text-xs font-mono text-slate-400">Waiting for endpoint heartbeat...</span>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-cyan-400 flex items-center gap-1.5">
-                        <BrainCircuit className="w-3.5 h-3.5" /> AI Risk Evaluation
-                      </span>
-                      <h2 className="text-lg font-bold font-display text-slate-100">{dev.hostname} ({dev.os})</h2>
-                    </div>
-                    <span className="text-[10px] font-mono font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 px-2.5 py-1 rounded-full">
-                      Device #{dIdx + 1}
-                    </span>
-                  </div>
-
-                  {/* Gauge representation */}
-                  <div className="flex flex-col items-center justify-center py-1 relative">
-                    <div className="w-32 h-32 rounded-full border-8 border-slate-900 flex flex-col items-center justify-center relative shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
-                      <div
-                        className={`absolute inset-0 rounded-full border-8 border-t-transparent border-r-transparent animate-spin-slow opacity-80 ${
-                          dScore >= 85
-                            ? 'border-rose-500'
-                            : dScore >= 60
-                            ? 'border-orange-500'
-                            : dScore >= 30
-                            ? 'border-amber-500'
-                            : 'border-cyan-400'
-                        }`}
-                        style={{ transform: `rotate(${dScore * 3.6}deg)`, transition: 'transform 0.5s ease-out' }}
-                      />
-                      <span className={`text-3xl font-black font-mono ${
-                        dScore >= 85
-                          ? 'text-rose-500'
-                          : dScore >= 60
-                          ? 'text-orange-400'
-                          : dScore >= 30
-                          ? 'text-amber-400'
-                          : 'text-cyan-400'
-                      }`}>{dScore}</span>
-                      <span className="text-[8px] font-mono text-slate-400 uppercase tracking-widest mt-0.5 font-bold">
-                        / 100 {dScore >= 85 ? 'CRITICAL RISK' : dScore >= 60 ? 'HIGH RISK' : dScore >= 30 ? 'MEDIUM RISK' : 'LOW RISK'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* AI Prediction Box */}
-                  <div className="p-3.5 rounded-xl border border-white/5 bg-slate-900/40 flex flex-col gap-2">
-                    <div className="flex justify-between items-center text-xs font-mono">
-                      <span className="text-slate-400">AI Detection Status:</span>
-                      <span className={`font-bold ${(dAi.prediction || dAi.attack || 'Normal') === 'Normal' ? 'text-emerald-400' : 'text-rose-400 animate-pulse'}`}>
-                        {(dAi.prediction || dAi.attack || 'Normal') === 'Normal' ? '🟢 Normal' : '🔴 Threat Detected'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs font-mono">
-                      <span className="text-slate-400">Predicted Attack:</span>
-                      <span className="text-slate-200 font-bold">{dAi.prediction || dAi.attack || 'Normal'}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs font-mono">
-                      <span className="text-slate-400">Confidence Score:</span>
-                      <span className="text-cyan-400 font-bold">
-                        {typeof dAi.confidence === 'number' ? `${dAi.confidence.toFixed(1)}%` : dAi.confidence || '100.0%'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs font-mono pt-1 border-t border-white/5">
-                      <span className="text-slate-400">Severity Level:</span>
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase border ${
-                        dAi.severity?.toLowerCase() === 'critical'
-                          ? 'bg-rose-500/10 border-rose-500/20 text-rose-400'
-                          : dAi.severity?.toLowerCase() === 'high'
-                          ? 'bg-orange-500/10 border-orange-500/20 text-orange-400'
-                          : dAi.severity?.toLowerCase() === 'medium'
-                          ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                          : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                      }`}>
-                        {dAi.severity || 'Low'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* AI Prediction Timeline */}
-                  <div className="flex flex-col gap-1.5 border-t border-white/5 pt-2.5">
-                    <span className="text-[9px] font-mono font-bold tracking-widest uppercase text-slate-400 flex items-center gap-1.5">
-                      <Clock className="w-3 h-3 text-cyan-400" /> Timeline ({dev.hostname})
-                    </span>
-                    <div className="flex flex-col gap-1 max-h-20 overflow-y-auto pr-1">
-                      {dTimeline.length === 0 ? (
-                        <div className="text-[10px] font-mono text-slate-500 py-0.5">Monitoring events...</div>
-                      ) : (
-                        dTimeline.map((item, i) => (
-                          <div key={i} className="flex justify-between items-center text-[10px] font-mono p-1 rounded bg-white/5 border border-white/5">
-                            <span className="text-slate-400">{item.time}</span>
-                            <span className={`font-semibold ${item.prediction === 'Normal' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                              {item.prediction}
-                            </span>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Live Alert Summary Box */}
-                  <div className="p-3 rounded-xl border border-white/10 bg-slate-900/60 flex flex-col gap-1.5 shadow-inner">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1">
-                        <ShieldAlert className="w-3 h-3" /> Summary ({dev.hostname})
-                      </span>
-                      <span className={`px-2 py-0.5 rounded-full text-[8px] font-mono font-bold border ${summaryInfo.badgeColor}`}>
-                        {dAi.prediction || dAi.attack || 'Normal'}
-                      </span>
-                    </div>
-                    <p className="text-[10px] font-mono text-slate-300 leading-relaxed">
-                      {summaryInfo.summary}
-                    </p>
-                    <div className="flex items-center gap-1 pt-1 border-t border-white/5 text-[9px] font-mono text-cyan-300">
-                      <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
-                      <span>{summaryInfo.action}</span>
-                    </div>
-                  </div>
-                </GlassCard>
-              );
-            })
-          )}
         </div>
-      </div>
+
+        <div className="w-full h-[450px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorNormal" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="colorThreat" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#a855f7" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="time" stroke="#64748b" fontSize={10} tickLine={false} />
+              <YAxis stroke="#64748b" fontSize={10} tickLine={false} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                  borderColor: 'rgba(255, 255, 255, 0.1)',
+                  borderRadius: '12px',
+                  backdropFilter: 'blur(10px)',
+                  fontSize: '12px',
+                }}
+              />
+              <Area type="monotone" dataKey="normal" stroke="#06b6d4" strokeWidth={2} fillOpacity={1} fill="url(#colorNormal)" />
+              <Area type="monotone" dataKey="threat" stroke="#a855f7" strokeWidth={2} fillOpacity={1} fill="url(#colorThreat)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Export / Incident Report Action Footer */}
+        <div className="pt-3 border-t border-white/5 flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="text-xs font-bold font-mono text-slate-200">Export SOC Analysis Report</span>
+            <span className="text-[10px] font-mono text-slate-400">Generate structured PDF/JSON incident audit report for connected devices</span>
+          </div>
+          <GlassButton
+            onClick={() => window.print()}
+            className="px-5 py-2.5 text-xs font-mono bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 shadow-[0_0_15px_rgba(6,182,212,0.3)]"
+            icon={FileCheck}
+          >
+            Generate Incident Report
+          </GlassButton>
+        </div>
+      </GlassCard>
 
 
 
