@@ -291,46 +291,47 @@ export const Dashboard = () => {
         </GlassCard>
 
         {/* Card 4: Active Registered Endpoint Devices */}
-        <GlassCard tiltEffect={true} className="p-5 flex flex-col justify-between gap-3">
+        <GlassCard tiltEffect={true} className="p-5 flex flex-col justify-between gap-3 min-h-[140px]">
           <div className="flex justify-between items-center">
             <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-slate-500">
-              Registered Devices ({registeredDevices.length})
+              Connected Endpoints ({registeredDevices.length})
             </span>
-            {registeredDevices.length > 1 ? (
-              <select
-                value={selectedDeviceIndex}
-                onChange={(e) => setSelectedDeviceIndex(Number(e.target.value))}
-                className="bg-slate-900/80 border border-white/10 rounded-lg text-xs font-mono text-cyan-400 px-2 py-1 outline-none cursor-pointer hover:border-cyan-500/40"
-              >
-                {registeredDevices.map((dev, i) => (
-                  <option key={dev.device_id || i} value={i} className="bg-slate-900 text-slate-200">
-                    {dev.hostname || `Device ${i + 1}`}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
-                <Network className="w-4.5 h-4.5" />
-              </div>
-            )}
+            <div className="p-1.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
+              <Network className="w-4 h-4" />
+            </div>
           </div>
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between">
-              <span className="text-xl font-extrabold font-mono text-slate-100 truncate">
-                {registeredDevices[selectedDeviceIndex]?.hostname || registeredDevices[0]?.hostname || 'Mac.lan'}
-              </span>
-              <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-                (registeredDevices[selectedDeviceIndex] || registeredDevices[0])?.status === 'Online'
-                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                  : 'bg-rose-500/10 border-rose-500/20 text-rose-400 animate-pulse'
-              }`}>
-                {(registeredDevices[selectedDeviceIndex] || registeredDevices[0])?.status === 'Online' ? '🟢 Online' : '🔴 Offline'}
-              </span>
-            </div>
-            <div className="flex justify-between items-center text-[10px] font-mono text-slate-400 mt-0.5">
-              <span>{(registeredDevices[selectedDeviceIndex] || registeredDevices[0])?.os || 'macOS'}</span>
-              <span className="text-cyan-400/80">Last Seen: {(registeredDevices[selectedDeviceIndex] || registeredDevices[0])?.heartbeat_age || 'Just Now'}</span>
-            </div>
+          
+          <div className="flex flex-col gap-2 max-h-24 overflow-y-auto pr-1">
+            {registeredDevices.length === 0 ? (
+              <div className="text-xs font-mono text-slate-400">No endpoints registered</div>
+            ) : (
+              registeredDevices.map((dev, i) => {
+                const isSelected = i === selectedDeviceIndex;
+                return (
+                  <div
+                    key={dev.device_id || i}
+                    onClick={() => setSelectedDeviceIndex(i)}
+                    className={`flex items-center justify-between p-2 rounded-xl border cursor-pointer transition-all ${
+                      isSelected
+                        ? 'bg-cyan-500/10 border-cyan-500/30 text-slate-100 shadow-[0_0_10px_rgba(6,182,212,0.15)]'
+                        : 'bg-slate-900/40 border-white/5 text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                    }`}
+                  >
+                    <div className="flex flex-col overflow-hidden">
+                      <span className="text-xs font-bold font-mono truncate">{dev.hostname}</span>
+                      <span className="text-[9px] font-mono text-slate-400">{dev.os || 'OS'} • {dev.heartbeat_age || 'Just now'}</span>
+                    </div>
+                    <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                      dev.status === 'Online'
+                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                        : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
+                    }`}>
+                      {dev.status === 'Online' ? '🟢 Online' : '🔴 Offline'}
+                    </span>
+                  </div>
+                );
+              })
+            )}
           </div>
         </GlassCard>
       </div>
