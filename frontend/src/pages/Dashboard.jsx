@@ -235,7 +235,9 @@ export const Dashboard = () => {
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               SOC Operational
             </span>
-            <span className="text-xs font-mono text-slate-500">| Cluster Node #409</span>
+            <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-mono text-[10px] font-bold uppercase tracking-wider">
+              <Server className="w-3 h-3 text-cyan-400" /> Cluster Active
+            </span>
           </div>
           <h1 className="text-3xl font-extrabold font-display tracking-tight dark:text-slate-100 text-slate-900">
             Cyber Threat Operations Center
