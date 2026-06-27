@@ -46,6 +46,7 @@ export const Dashboard = () => {
   const [registeredDevices, setRegisteredDevices] = useState([]);
   const [selectedDeviceIndex, setSelectedDeviceIndex] = useState(0);
   const [telemetryData, setTelemetryData] = useState(null);
+  const [deviceTelemetryMap, setDeviceTelemetryMap] = useState({});
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   // Phase 5 AI Detection State
@@ -103,6 +104,13 @@ export const Dashboard = () => {
         const idx = selectedDeviceIndex < devicesData.length ? selectedDeviceIndex : 0;
         const telem = await apiService.getDeviceTelemetry(devicesData[idx].device_id);
         if (telem) setTelemetryData(telem);
+
+        const mapAcc = {};
+        for (const dev of devicesData) {
+          const t = await apiService.getDeviceTelemetry(dev.device_id);
+          if (t) mapAcc[dev.device_id] = t;
+        }
+        setDeviceTelemetryMap(mapAcc);
       }
 
       const alertsData = await apiService.getAlerts();
@@ -129,6 +137,13 @@ export const Dashboard = () => {
         
         const telem = await apiService.getDeviceTelemetry(activeDev.device_id);
         setTelemetryData(telem);
+
+        const mapAcc = {};
+        for (const dev of devices) {
+          const t = await apiService.getDeviceTelemetry(dev.device_id);
+          if (t) mapAcc[dev.device_id] = t;
+        }
+        setDeviceTelemetryMap(mapAcc);
 
         // Fetch AI prediction & history if online
         if (activeDev.status === 'Online') {
@@ -223,143 +238,113 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      {/* Metric Stat Cards Bento Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Helper active device reference */}
-        {(() => {
-          const activeDev = registeredDevices[selectedDeviceIndex] || registeredDevices[0];
-          const isOnline = activeDev?.status === 'Online';
-          const devHost = activeDev?.hostname || 'Device';
-
-          return (
-            <>
-              {/* Card 1: System Telemetry (CPU & RAM) */}
-              <GlassCard tiltEffect={true} className="p-5 flex flex-col justify-between gap-3">
-                <div className="flex justify-between items-start">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-slate-500">
-                      System Hardware
-                    </span>
-                    <span className="text-[9px] font-mono text-cyan-400 font-bold truncate max-w-[120px]">
-                      {devHost}
-                    </span>
-                  </div>
-                  <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                    <Cpu className="w-4.5 h-4.5" />
-                  </div>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-2xl font-extrabold font-mono text-emerald-400">
-                    {isOnline && telemetryData ? `${telemetryData.cpu_percent}%` : '--'} <span className="text-xs font-sans text-slate-400">CPU</span>
-                  </span>
-                  <span className="text-xs text-slate-400 font-mono mt-1">
-                    RAM: {isOnline && telemetryData ? `${telemetryData.ram_percent}%` : '--'} | Disk: {isOnline && telemetryData ? `${telemetryData.disk_percent}%` : '--'}
-                  </span>
-                </div>
-              </GlassCard>
-
-              {/* Card 2: Live Network Packets Rate & Totals */}
-              <GlassCard tiltEffect={true} className="p-5 flex flex-col justify-between gap-3">
-                <div className="flex justify-between items-start">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-slate-500">
-                      Network Packets
-                    </span>
-                    <span className="text-[9px] font-mono text-cyan-400 font-bold truncate max-w-[120px]">
-                      {devHost}
-                    </span>
-                  </div>
-                  <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
-                    <Activity className="w-4.5 h-4.5 animate-pulse" />
-                  </div>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg font-extrabold font-mono text-emerald-400">
-                      ↓ {isOnline && telemetryData ? `${telemetryData.rx_packets_per_sec ?? 0} pkt/s` : '0 pkt/s'}
-                    </span>
-                    <span className="text-lg font-extrabold font-mono text-cyan-400">
-                      ↑ {isOnline && telemetryData ? `${telemetryData.tx_packets_per_sec ?? 0} pkt/s` : '0 pkt/s'}
-                    </span>
-                  </div>
-                  <span className="text-[11px] text-slate-400 font-mono mt-1">
-                    Total: RX {telemetryData ? (telemetryData.formatted_packets_recv || telemetryData.packets_recv) : '--'} | TX {telemetryData ? (telemetryData.formatted_packets_sent || telemetryData.packets_sent) : '--'}
-                  </span>
-                </div>
-              </GlassCard>
-
-              {/* Card 3: Live Network Telemetry Speeds */}
-              <GlassCard tiltEffect={true} className="p-5 flex flex-col justify-between gap-3">
-                <div className="flex justify-between items-start">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-slate-500">
-                      Live Speed (DL / UL)
-                    </span>
-                    <span className="text-[9px] font-mono text-indigo-400 font-bold truncate max-w-[120px]">
-                      {devHost}
-                    </span>
-                  </div>
-                  <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
-                    <Zap className="w-4.5 h-4.5" />
-                  </div>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-2xl font-extrabold font-mono text-slate-100">
-                    {isOnline && telemetryData ? telemetryData.download_speed : '0 KB/s'}
-                  </span>
-                  <span className="text-xs text-indigo-400 font-mono mt-1">
-                    Upload: {isOnline && telemetryData ? telemetryData.upload_speed : '0 KB/s'}
-                  </span>
-                </div>
-              </GlassCard>
-            </>
-          );
-        })()}
-
-        {/* Card 4: Active Registered Endpoint Devices */}
-        <GlassCard tiltEffect={true} className="p-5 flex flex-col justify-between gap-3 min-h-[140px]">
-          <div className="flex justify-between items-center">
-            <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-slate-500">
-              Connected Endpoints ({registeredDevices.length})
-            </span>
-            <div className="p-1.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
-              <Network className="w-4 h-4" />
-            </div>
+      {/* Multi-Device Separate Telemetry Displays Container */}
+      <div className="flex flex-col gap-4">
+        {registeredDevices.length === 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <GlassCard tiltEffect={true} className="p-5 flex flex-col justify-between gap-3">
+              <span className="text-xs font-mono text-slate-400">No active telemetry devices connected</span>
+            </GlassCard>
           </div>
-          
-          <div className="flex flex-col gap-2 max-h-24 overflow-y-auto pr-1">
-            {registeredDevices.length === 0 ? (
-              <div className="text-xs font-mono text-slate-400">No endpoints registered</div>
-            ) : (
-              registeredDevices.map((dev, i) => {
-                const isSelected = i === selectedDeviceIndex;
-                return (
-                  <div
-                    key={dev.device_id || i}
-                    onClick={() => setSelectedDeviceIndex(i)}
-                    className={`flex items-center justify-between p-2 rounded-xl border cursor-pointer transition-all ${
-                      isSelected
-                        ? 'bg-cyan-500/10 border-cyan-500/30 text-slate-100 shadow-[0_0_10px_rgba(6,182,212,0.15)]'
-                        : 'bg-slate-900/40 border-white/5 text-slate-400 hover:bg-white/5 hover:text-slate-200'
-                    }`}
-                  >
-                    <div className="flex flex-col overflow-hidden">
-                      <span className="text-xs font-bold font-mono truncate">{dev.hostname}</span>
-                      <span className="text-[9px] font-mono text-slate-400">{dev.os || 'OS'} • {dev.heartbeat_age || 'Just now'}</span>
-                    </div>
-                    <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-                      dev.status === 'Online'
-                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                        : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
+        ) : (
+          registeredDevices.map((dev, devIdx) => {
+            const devTelem = deviceTelemetryMap[dev.device_id] || (devIdx === selectedDeviceIndex ? telemetryData : null);
+            const isOnline = dev.status === 'Online';
+            const isSelected = devIdx === selectedDeviceIndex;
+
+            return (
+              <div
+                key={dev.device_id || devIdx}
+                onClick={() => setSelectedDeviceIndex(devIdx)}
+                className={`flex flex-col gap-2 p-3 rounded-2xl border transition-all cursor-pointer ${
+                  isSelected
+                    ? 'border-cyan-500/30 bg-slate-900/40 shadow-[0_0_20px_rgba(6,182,212,0.1)]'
+                    : 'border-white/5 bg-slate-950/20 hover:border-white/10'
+                }`}
+              >
+                {/* Device Header Strip */}
+                <div className="flex items-center justify-between px-2 pt-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                    <span className="text-xs font-bold font-mono text-slate-100 uppercase tracking-wider">
+                      Endpoint Device #{devIdx + 1}: <span className="text-cyan-400 font-extrabold">{dev.hostname}</span> ({dev.os})
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-[10px] font-mono">
+                    <span className="text-slate-400">IP: <span className="text-slate-200">{dev.ip || '127.0.0.1'}</span></span>
+                    <span className={`px-2 py-0.5 rounded-full font-bold border ${
+                      isOnline ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
                     }`}>
-                      {dev.status === 'Online' ? '🟢 Online' : '🔴 Offline'}
+                      {isOnline ? '🟢 ONLINE' : '🔴 OFFLINE'}
                     </span>
                   </div>
-                );
-              })
-            )}
-          </div>
-        </GlassCard>
+                </div>
+
+                {/* Separate Telemetry Cards Row for this specific device */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Card 1: System Hardware */}
+                  <GlassCard tiltEffect={false} className="p-4 flex flex-col justify-between gap-2 bg-slate-900/60">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-slate-400">
+                        System Hardware
+                      </span>
+                      <Cpu className="w-4 h-4 text-emerald-400" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-2xl font-extrabold font-mono text-emerald-400">
+                        {isOnline && devTelem ? `${devTelem.cpu_percent}%` : '--'} <span className="text-xs font-sans text-slate-400">CPU</span>
+                      </span>
+                      <span className="text-xs text-slate-400 font-mono mt-0.5">
+                        RAM: {isOnline && devTelem ? `${devTelem.ram_percent}%` : '--'} | Disk: {isOnline && devTelem ? `${devTelem.disk_percent}%` : '--'}
+                      </span>
+                    </div>
+                  </GlassCard>
+
+                  {/* Card 2: Network Packets */}
+                  <GlassCard tiltEffect={false} className="p-4 flex flex-col justify-between gap-2 bg-slate-900/60">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-slate-400">
+                        Network Packets
+                      </span>
+                      <Activity className="w-4 h-4 text-cyan-400 animate-pulse" />
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg font-extrabold font-mono text-emerald-400">
+                          ↓ {isOnline && devTelem ? `${devTelem.rx_packets_per_sec ?? 0} pkt/s` : '0 pkt/s'}
+                        </span>
+                        <span className="text-lg font-extrabold font-mono text-cyan-400">
+                          ↑ {isOnline && devTelem ? `${devTelem.tx_packets_per_sec ?? 0} pkt/s` : '0 pkt/s'}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-400 font-mono mt-0.5">
+                        Total: RX {devTelem ? (devTelem.formatted_packets_recv || devTelem.packets_recv) : '--'} | TX {devTelem ? (devTelem.formatted_packets_sent || devTelem.packets_sent) : '--'}
+                      </span>
+                    </div>
+                  </GlassCard>
+
+                  {/* Card 3: Live Speed */}
+                  <GlassCard tiltEffect={false} className="p-4 flex flex-col justify-between gap-2 bg-slate-900/60">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-slate-400">
+                        Live Speed (DL / UL)
+                      </span>
+                      <Zap className="w-4 h-4 text-indigo-400" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-2xl font-extrabold font-mono text-slate-100">
+                        {isOnline && devTelem ? devTelem.download_speed : '0 KB/s'}
+                      </span>
+                      <span className="text-xs text-indigo-400 font-mono mt-0.5">
+                        Upload: {isOnline && devTelem ? devTelem.upload_speed : '0 KB/s'}
+                      </span>
+                    </div>
+                  </GlassCard>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* Middle Section: Live Chart & Threat Gauge */}
