@@ -423,7 +423,7 @@ export const Dashboard = () => {
               <span className="text-[10px] font-mono text-slate-400">Generate structured PDF/JSON incident audit report for connected devices</span>
             </div>
             <GlassButton
-              onClick={() => setIsReportModalOpen(true)}
+              onClick={() => window.print()}
               className="px-5 py-2.5 text-xs font-mono bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 shadow-[0_0_15px_rgba(6,182,212,0.3)]"
               icon={FileCheck}
             >
