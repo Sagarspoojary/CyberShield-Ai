@@ -44,6 +44,7 @@ export const Dashboard = () => {
   const [activeConnections, setActiveConnections] = useState(1850);
   const [connectedDevices, setConnectedDevices] = useState(1);
   const [registeredDevices, setRegisteredDevices] = useState([]);
+  const [selectedDeviceIndex, setSelectedDeviceIndex] = useState(0);
   const [telemetryData, setTelemetryData] = useState(null);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
@@ -99,8 +100,8 @@ export const Dashboard = () => {
       if (devicesData && Array.isArray(devicesData) && devicesData.length > 0) {
         setRegisteredDevices(devicesData);
         setConnectedDevices(devicesData.length);
-        
-        const telem = await apiService.getDeviceTelemetry(devicesData[0].device_id);
+        const idx = selectedDeviceIndex < devicesData.length ? selectedDeviceIndex : 0;
+        const telem = await apiService.getDeviceTelemetry(devicesData[idx].device_id);
         if (telem) setTelemetryData(telem);
       }
 
@@ -123,7 +124,8 @@ export const Dashboard = () => {
       if (devices && Array.isArray(devices) && devices.length > 0) {
         setRegisteredDevices(devices);
         setConnectedDevices(devices.length);
-        const activeDev = devices[0];
+        const idx = selectedDeviceIndex < devices.length ? selectedDeviceIndex : 0;
+        const activeDev = devices[idx];
         
         const telem = await apiService.getDeviceTelemetry(activeDev.device_id);
         setTelemetryData(telem);
@@ -290,30 +292,44 @@ export const Dashboard = () => {
 
         {/* Card 4: Active Registered Endpoint Devices */}
         <GlassCard tiltEffect={true} className="p-5 flex flex-col justify-between gap-3">
-          <div className="flex justify-between items-start">
+          <div className="flex justify-between items-center">
             <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-slate-500">
-              Registered Devices
+              Registered Devices ({registeredDevices.length})
             </span>
-            <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
-              <Network className="w-4.5 h-4.5" />
-            </div>
+            {registeredDevices.length > 1 ? (
+              <select
+                value={selectedDeviceIndex}
+                onChange={(e) => setSelectedDeviceIndex(Number(e.target.value))}
+                className="bg-slate-900/80 border border-white/10 rounded-lg text-xs font-mono text-cyan-400 px-2 py-1 outline-none cursor-pointer hover:border-cyan-500/40"
+              >
+                {registeredDevices.map((dev, i) => (
+                  <option key={dev.device_id || i} value={i} className="bg-slate-900 text-slate-200">
+                    {dev.hostname || `Device ${i + 1}`}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
+                <Network className="w-4.5 h-4.5" />
+              </div>
+            )}
           </div>
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
               <span className="text-xl font-extrabold font-mono text-slate-100 truncate">
-                {registeredDevices[0]?.hostname || 'Mac.lan'}
+                {registeredDevices[selectedDeviceIndex]?.hostname || registeredDevices[0]?.hostname || 'Mac.lan'}
               </span>
               <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-                registeredDevices[0]?.status === 'Online'
+                (registeredDevices[selectedDeviceIndex] || registeredDevices[0])?.status === 'Online'
                   ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                   : 'bg-rose-500/10 border-rose-500/20 text-rose-400 animate-pulse'
               }`}>
-                {registeredDevices[0]?.status === 'Online' ? '🟢 Online' : '🔴 Offline'}
+                {(registeredDevices[selectedDeviceIndex] || registeredDevices[0])?.status === 'Online' ? '🟢 Online' : '🔴 Offline'}
               </span>
             </div>
             <div className="flex justify-between items-center text-[10px] font-mono text-slate-400 mt-0.5">
-              <span>{registeredDevices[0]?.os || 'macOS'}</span>
-              <span className="text-cyan-400/80">Last Seen: {registeredDevices[0]?.heartbeat_age || 'Just Now'}</span>
+              <span>{(registeredDevices[selectedDeviceIndex] || registeredDevices[0])?.os || 'macOS'}</span>
+              <span className="text-cyan-400/80">Last Seen: {(registeredDevices[selectedDeviceIndex] || registeredDevices[0])?.heartbeat_age || 'Just Now'}</span>
             </div>
           </div>
         </GlassCard>
