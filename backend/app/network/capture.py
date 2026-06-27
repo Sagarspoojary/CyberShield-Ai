@@ -95,6 +95,15 @@ class PacketCaptureEngine:
                         timeout=3
                     )
                 except Exception as e1:
+                    if "Operation not permitted" in str(e1) or "Permission denied" in str(e1):
+                        logger.info("==================================================")
+                        logger.info("[CLOUD MODE ACTIVE] Cloud container live raw sniffing skipped.")
+                        logger.info("Endpoint Telemetry Ingestion Mode Active for Remote Agents.")
+                        logger.info("==================================================")
+                        while self.is_running:
+                            time.sleep(10.0)
+                        break
+                    
                     logger.warning(f"Standard sniff notice: {e1}. Retrying with AsyncSniffer fallback...")
                     try:
                         # Item 3: AsyncSniffer fallback
@@ -109,6 +118,11 @@ class PacketCaptureEngine:
                         if async_sniffer.running:
                             async_sniffer.stop()
                     except Exception as e2:
+                        if "Operation not permitted" in str(e2) or "Permission denied" in str(e2):
+                            logger.info("[CLOUD MODE ACTIVE] Raw packet sniffing skipped on cloud container.")
+                            while self.is_running:
+                                time.sleep(10.0)
+                            break
                         logger.error(f"AsyncSniffer exception: {e2}. Reconnecting in 1s...")
                         self.sniffer_alive = False
                         time.sleep(1.0)
