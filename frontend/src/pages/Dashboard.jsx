@@ -53,6 +53,7 @@ export const Dashboard = () => {
   const [telemetryData, setTelemetryData] = useState(null);
   const [deviceTelemetryMap, setDeviceTelemetryMap] = useState({});
   const [deviceAiMap, setDeviceAiMap] = useState({});
+  const [deviceAiTimelineMap, setDeviceAiTimelineMap] = useState({});
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   // Phase 5 AI Detection State
@@ -154,6 +155,20 @@ export const Dashboard = () => {
         }
         setDeviceTelemetryMap(mapAcc);
         setDeviceAiMap(aiAcc);
+
+        setDeviceAiTimelineMap((prevTimelineMap) => {
+          const newMap = { ...prevTimelineMap };
+          for (const dev of devices) {
+            const p = aiAcc[dev.device_id];
+            if (p) {
+              const timeStr = p.last_prediction_time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+              const currentList = newMap[dev.device_id] || [];
+              const item = { time: timeStr, prediction: p.prediction, severity: p.severity };
+              newMap[dev.device_id] = [item, ...currentList.slice(0, 9)];
+            }
+          }
+          return newMap;
+        });
 
         // Fetch AI prediction & history for active selected device
         const activeAi = aiAcc[activeDev.device_id] || await apiService.getAiPrediction(activeDev.device_id);
@@ -407,187 +422,185 @@ export const Dashboard = () => {
           </div>
         </GlassCard>
 
-        {/* Threat Score Gauge & AI Prediction Card */}
-        <GlassCard tiltEffect={true} className="p-6 flex flex-col justify-between gap-6 relative overflow-hidden">
-          {/* Offline Overlay */}
-          {registeredDevices[0]?.status !== 'Online' && (
-            <div className="absolute inset-0 z-20 backdrop-blur-md bg-slate-950/80 rounded-2xl flex flex-col items-center justify-center p-6 text-center gap-3 border border-white/10">
-              <ShieldAlert className="w-10 h-10 text-amber-400 animate-pulse" />
-              <span className="text-lg font-extrabold font-mono text-slate-100">AI Engine Paused</span>
-              <span className="text-xs font-mono text-slate-400">Waiting for device telemetry...</span>
-            </div>
-          )}
-
-          <div className="flex justify-between items-start">
-            <div>
-              <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-cyan-400 flex items-center gap-1.5">
-                <BrainCircuit className="w-3.5 h-3.5" /> AI Risk Evaluation
-              </span>
-              <h2 className="text-xl font-bold font-display text-slate-100">Threat Score Gauge</h2>
-            </div>
-            <span className="text-[10px] font-mono font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2.5 py-1 rounded-full">
-              Evaluating: {(registeredDevices[selectedDeviceIndex] || registeredDevices[0])?.hostname || 'Mac.lan'}
-            </span>
-          </div>
-
-          {aiLoading && registeredDevices[0]?.status === 'Online' ? (
-            <div className="flex flex-col items-center justify-center py-8 gap-4 animate-pulse">
-              <div className="w-36 h-36 rounded-full bg-slate-800/60" />
-              <div className="h-12 w-full bg-slate-800/60 rounded-xl" />
-            </div>
+        {/* Dedicated Separate AI Risk Evaluation Cards per Connected Device */}
+        <div className="flex flex-col gap-6">
+          {registeredDevices.length === 0 ? (
+            <GlassCard tiltEffect={true} className="p-6 flex flex-col items-center justify-center min-h-[300px]">
+              <span className="text-sm font-mono text-slate-400">No registered endpoints online</span>
+            </GlassCard>
           ) : (
-            <>
-              {/* Gauge representation */}
-              <div className="flex flex-col items-center justify-center py-1 relative">
-                <div className="w-36 h-36 rounded-full border-8 border-slate-900 flex flex-col items-center justify-center relative shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
-                  <div
-                    className={`absolute inset-0 rounded-full border-8 border-t-transparent border-r-transparent animate-spin-slow opacity-80 ${
-                      threatScore >= 85
-                        ? 'border-rose-500'
-                        : threatScore >= 60
-                        ? 'border-orange-500'
-                        : threatScore >= 30
-                        ? 'border-amber-500'
-                        : 'border-cyan-400'
-                    }`}
-                    style={{ transform: `rotate(${threatScore * 3.6}deg)`, transition: 'transform 0.5s ease-out' }}
-                  />
-                  <span className={`text-4xl font-black font-mono ${
-                    threatScore >= 85
-                      ? 'text-rose-500'
-                      : threatScore >= 60
-                      ? 'text-orange-400'
-                      : threatScore >= 30
-                      ? 'text-amber-400'
-                      : 'text-cyan-400'
-                  }`}>{threatScore}</span>
-                  <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest mt-1 font-bold">
-                    / 100 {threatScore >= 85 ? 'CRITICAL RISK' : threatScore >= 60 ? 'HIGH RISK' : threatScore >= 30 ? 'MEDIUM RISK' : 'LOW RISK'}
-                  </span>
-                </div>
-              </div>
+            registeredDevices.map((dev, dIdx) => {
+              const dAi = deviceAiMap[dev.device_id] || (dIdx === selectedDeviceIndex ? aiData : { prediction: "Normal", confidence: 100.0, risk_score: 5, severity: "Low" });
+              const dTimeline = deviceAiTimelineMap[dev.device_id] || (dIdx === selectedDeviceIndex ? aiTimeline : []);
+              const dScore = dAi.risk_score !== undefined ? dAi.risk_score : 5;
+              const isDevOnline = dev.status === 'Online';
 
-              {/* AI Prediction Box */}
-              <div className="p-4 rounded-xl border border-white/5 bg-slate-900/40 flex flex-col gap-2.5">
-                <div className="flex justify-between items-center text-xs font-mono">
-                  <span className="text-slate-400">AI Detection Status:</span>
-                  <span className={`font-bold ${aiData.prediction === 'Normal' ? 'text-emerald-400' : 'text-rose-400 animate-pulse'}`}>
-                    {aiData.prediction === 'Normal' ? '🟢 Normal' : '🔴 Threat Detected'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-xs font-mono">
-                  <span className="text-slate-400">Predicted Attack:</span>
-                  <span className="text-slate-200 font-bold">{aiData.prediction || 'Normal'}</span>
-                </div>
-                <div className="flex justify-between items-center text-xs font-mono">
-                  <span className="text-slate-400">Confidence Score:</span>
-                  <span className="text-cyan-400 font-bold">
-                    {typeof aiData.confidence === 'number' ? `${aiData.confidence.toFixed(1)}%` : aiData.confidence || '98.7%'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-xs font-mono pt-1 border-t border-white/5">
-                  <span className="text-slate-400">Severity Level:</span>
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase border ${
-                    aiData.severity?.toLowerCase() === 'critical'
-                      ? 'bg-rose-500/10 border-rose-500/20 text-rose-400'
-                      : aiData.severity?.toLowerCase() === 'high'
-                      ? 'bg-orange-500/10 border-orange-500/20 text-orange-400'
-                      : aiData.severity?.toLowerCase() === 'medium'
-                      ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                      : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                  }`}>
-                    {aiData.severity || 'Low'}
-                  </span>
-                </div>
-              </div>
+              const summaryInfo = (() => {
+                const pred = dAi.prediction || dAi.attack || 'Normal';
+                switch (pred) {
+                  case 'HTTP_DDoS':
+                    return {
+                      summary: 'Massive packet flood detected (>2,000 pkts). Rapid HTTP requests threaten socket availability. Rate limiting & WAF rules enabled.',
+                      action: 'Rate Limiting & WAF Block Active',
+                      badgeColor: 'bg-rose-500/20 text-rose-400 border-rose-500/30'
+                    };
+                  case 'Port_Scan':
+                    return {
+                      summary: 'Rapid port probing detected (<20 pkts band with SYN flags). Host scanning attempt identified. Firewall logging elevated.',
+                      action: 'Source IP Firewall Logging Active',
+                      badgeColor: 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                    };
+                  case 'Brute_Force':
+                    return {
+                      summary: 'Authentication POST attempts detected (200-500 pkts band). Repeated socket handshakes target login endpoints.',
+                      action: 'Account Lockout & MFA Active',
+                      badgeColor: 'bg-orange-500/20 text-orange-400 border-orange-500/30'
+                    };
+                  case 'Web_Crwling':
+                    return {
+                      summary: 'Multi-page web scraping detected (500-2,000 pkts band). High subflow byte volume transferred across documentation routes.',
+                      action: 'Subflow Request Throttling Active',
+                      badgeColor: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30'
+                    };
+                  default:
+                    return {
+                      summary: 'System traffic operating normally within standard baseline limits (20-100 pkts). No anomalies detected.',
+                      action: 'Continuous SOC Monitoring Active',
+                      badgeColor: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                    };
+                }
+              })();
 
-              {/* AI Prediction Timeline */}
-              <div className="flex flex-col gap-2 border-t border-white/5 pt-3">
-                <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-slate-400 flex items-center gap-1.5">
-                  <Clock className="w-3 h-3 text-cyan-400" /> AI Prediction Timeline
-                </span>
-                <div className="flex flex-col gap-1.5 max-h-24 overflow-y-auto pr-1">
-                  {aiTimeline.length === 0 ? (
-                    <div className="text-[11px] font-mono text-slate-500 py-1">Monitoring timeline events...</div>
-                  ) : (
-                    aiTimeline.map((item, i) => (
-                      <div key={i} className="flex justify-between items-center text-[11px] font-mono p-1.5 rounded bg-white/5 border border-white/5">
-                        <span className="text-slate-400">{item.time}</span>
-                        <span className={`font-semibold ${item.prediction === 'Normal' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                          {item.prediction}
-                        </span>
-                      </div>
-                    ))
+              return (
+                <GlassCard key={dev.device_id || dIdx} tiltEffect={true} className="p-6 flex flex-col justify-between gap-5 relative overflow-hidden">
+                  {!isDevOnline && (
+                    <div className="absolute inset-0 z-20 backdrop-blur-md bg-slate-950/80 rounded-2xl flex flex-col items-center justify-center p-6 text-center gap-3 border border-white/10">
+                      <ShieldAlert className="w-10 h-10 text-amber-400 animate-pulse" />
+                      <span className="text-lg font-extrabold font-mono text-slate-100">AI Engine Paused ({dev.hostname})</span>
+                      <span className="text-xs font-mono text-slate-400">Waiting for endpoint heartbeat...</span>
+                    </div>
                   )}
-                </div>
-              </div>
 
-              {/* Dynamic Real-Time Incident Alert Summary Box */}
-              {(() => {
-                const summaryInfo = (() => {
-                  const pred = aiData.prediction;
-                  switch (pred) {
-                    case 'HTTP_DDoS':
-                      return {
-                        title: 'CRITICAL THREAT: HTTP DDoS Flood',
-                        summary: 'Massive packet flood detected (>2,000 pkts). Rapid HTTP requests threaten web socket availability. Rate limiting & WAF rules enabled.',
-                        action: 'Rate Limiting & WAF Block Active',
-                        badgeColor: 'bg-rose-500/20 text-rose-400 border-rose-500/30'
-                      };
-                    case 'Port_Scan':
-                      return {
-                        title: 'MEDIUM THREAT: Port Scan Probing',
-                        summary: 'Rapid port probing detected (<20 pkts band with SYN flags). Host scanning attempt identified. Firewall logging elevated.',
-                        action: 'Source IP Firewall Logging Active',
-                        badgeColor: 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-                      };
-                    case 'Brute_Force':
-                      return {
-                        title: 'HIGH THREAT: Brute Force Stuffing',
-                        summary: 'Authentication POST attempts detected (200-500 pkts band). Repeated socket handshakes target login endpoints.',
-                        action: 'Account Lockout & MFA Active',
-                        badgeColor: 'bg-orange-500/20 text-orange-400 border-orange-500/30'
-                      };
-                    case 'Web_Crwling':
-                      return {
-                        title: 'LOW THREAT: Automated Web Crawling',
-                        summary: 'Multi-page web scraping detected (500-2,000 pkts band). High subflow byte volume transferred across documentation routes.',
-                        action: 'Subflow Request Throttling Active',
-                        badgeColor: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30'
-                      };
-                    default:
-                      return {
-                        title: 'NORMAL OPERATIONS: Baseline Safe',
-                        summary: 'System traffic operating normally within standard baseline limits (20-100 pkts). No anomalies detected on interface en0.',
-                        action: 'Continuous SOC Monitoring Active',
-                        badgeColor: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                      };
-                  }
-                })();
-
-                return (
-                  <div className="p-3.5 rounded-xl border border-white/10 bg-slate-900/60 flex flex-col gap-2 shadow-inner">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
-                        <ShieldAlert className="w-3.5 h-3.5" /> Live Alert Summary
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-cyan-400 flex items-center gap-1.5">
+                        <BrainCircuit className="w-3.5 h-3.5" /> AI Risk Evaluation
                       </span>
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold border ${summaryInfo.badgeColor}`}>
-                        {aiData.prediction}
+                      <h2 className="text-lg font-bold font-display text-slate-100">{dev.hostname} ({dev.os})</h2>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 px-2.5 py-1 rounded-full">
+                      Device #{dIdx + 1}
+                    </span>
+                  </div>
+
+                  {/* Gauge representation */}
+                  <div className="flex flex-col items-center justify-center py-1 relative">
+                    <div className="w-32 h-32 rounded-full border-8 border-slate-900 flex flex-col items-center justify-center relative shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
+                      <div
+                        className={`absolute inset-0 rounded-full border-8 border-t-transparent border-r-transparent animate-spin-slow opacity-80 ${
+                          dScore >= 85
+                            ? 'border-rose-500'
+                            : dScore >= 60
+                            ? 'border-orange-500'
+                            : dScore >= 30
+                            ? 'border-amber-500'
+                            : 'border-cyan-400'
+                        }`}
+                        style={{ transform: `rotate(${dScore * 3.6}deg)`, transition: 'transform 0.5s ease-out' }}
+                      />
+                      <span className={`text-3xl font-black font-mono ${
+                        dScore >= 85
+                          ? 'text-rose-500'
+                          : dScore >= 60
+                          ? 'text-orange-400'
+                          : dScore >= 30
+                          ? 'text-amber-400'
+                          : 'text-cyan-400'
+                      }`}>{dScore}</span>
+                      <span className="text-[8px] font-mono text-slate-400 uppercase tracking-widest mt-0.5 font-bold">
+                        / 100 {dScore >= 85 ? 'CRITICAL RISK' : dScore >= 60 ? 'HIGH RISK' : dScore >= 30 ? 'MEDIUM RISK' : 'LOW RISK'}
                       </span>
                     </div>
-                    <p className="text-[11px] font-mono text-slate-300 leading-relaxed">
+                  </div>
+
+                  {/* AI Prediction Box */}
+                  <div className="p-3.5 rounded-xl border border-white/5 bg-slate-900/40 flex flex-col gap-2">
+                    <div className="flex justify-between items-center text-xs font-mono">
+                      <span className="text-slate-400">AI Detection Status:</span>
+                      <span className={`font-bold ${(dAi.prediction || dAi.attack || 'Normal') === 'Normal' ? 'text-emerald-400' : 'text-rose-400 animate-pulse'}`}>
+                        {(dAi.prediction || dAi.attack || 'Normal') === 'Normal' ? '🟢 Normal' : '🔴 Threat Detected'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs font-mono">
+                      <span className="text-slate-400">Predicted Attack:</span>
+                      <span className="text-slate-200 font-bold">{dAi.prediction || dAi.attack || 'Normal'}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs font-mono">
+                      <span className="text-slate-400">Confidence Score:</span>
+                      <span className="text-cyan-400 font-bold">
+                        {typeof dAi.confidence === 'number' ? `${dAi.confidence.toFixed(1)}%` : dAi.confidence || '100.0%'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs font-mono pt-1 border-t border-white/5">
+                      <span className="text-slate-400">Severity Level:</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase border ${
+                        dAi.severity?.toLowerCase() === 'critical'
+                          ? 'bg-rose-500/10 border-rose-500/20 text-rose-400'
+                          : dAi.severity?.toLowerCase() === 'high'
+                          ? 'bg-orange-500/10 border-orange-500/20 text-orange-400'
+                          : dAi.severity?.toLowerCase() === 'medium'
+                          ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                          : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                      }`}>
+                        {dAi.severity || 'Low'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* AI Prediction Timeline */}
+                  <div className="flex flex-col gap-1.5 border-t border-white/5 pt-2.5">
+                    <span className="text-[9px] font-mono font-bold tracking-widest uppercase text-slate-400 flex items-center gap-1.5">
+                      <Clock className="w-3 h-3 text-cyan-400" /> Timeline ({dev.hostname})
+                    </span>
+                    <div className="flex flex-col gap-1 max-h-20 overflow-y-auto pr-1">
+                      {dTimeline.length === 0 ? (
+                        <div className="text-[10px] font-mono text-slate-500 py-0.5">Monitoring events...</div>
+                      ) : (
+                        dTimeline.map((item, i) => (
+                          <div key={i} className="flex justify-between items-center text-[10px] font-mono p-1 rounded bg-white/5 border border-white/5">
+                            <span className="text-slate-400">{item.time}</span>
+                            <span className={`font-semibold ${item.prediction === 'Normal' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                              {item.prediction}
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Live Alert Summary Box */}
+                  <div className="p-3 rounded-xl border border-white/10 bg-slate-900/60 flex flex-col gap-1.5 shadow-inner">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1">
+                        <ShieldAlert className="w-3 h-3" /> Summary ({dev.hostname})
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-[8px] font-mono font-bold border ${summaryInfo.badgeColor}`}>
+                        {dAi.prediction || dAi.attack || 'Normal'}
+                      </span>
+                    </div>
+                    <p className="text-[10px] font-mono text-slate-300 leading-relaxed">
                       {summaryInfo.summary}
                     </p>
-                    <div className="flex items-center gap-1.5 pt-1.5 border-t border-white/5 text-[10px] font-mono text-cyan-300">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                    <div className="flex items-center gap-1 pt-1 border-t border-white/5 text-[9px] font-mono text-cyan-300">
+                      <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
                       <span>{summaryInfo.action}</span>
                     </div>
                   </div>
-                );
-              })()}
-            </>
+                </GlassCard>
+              );
+            })
           )}
-        </GlassCard>
+        </div>
       </div>
 
 
