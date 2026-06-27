@@ -397,29 +397,30 @@ export const Dashboard = () => {
                       <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-cyan-400 flex items-center gap-1">
                         <BrainCircuit className="w-3.5 h-3.5" /> AI Risk Evaluation
                       </span>
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold border ${summaryInfo.badgeColor}`}>
-                        {devAi.prediction || devAi.attack || 'Normal'}
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold border ${isOnline ? summaryInfo.badgeColor : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'}`}>
+                        {isOnline ? (devAi.prediction || devAi.attack || 'Normal') : 'Normal'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col">
                         <span className={`text-xl font-extrabold font-mono ${
-                          devScore >= 85 ? 'text-rose-500' : devScore >= 60 ? 'text-orange-400' : devScore >= 30 ? 'text-amber-400' : 'text-cyan-400'
+                          isOnline && devScore >= 85 ? 'text-rose-500' : isOnline && devScore >= 60 ? 'text-orange-400' : isOnline && devScore >= 30 ? 'text-amber-400' : 'text-cyan-400'
                         }`}>
-                          {devScore} <span className="text-xs font-sans text-slate-400">/ 100 Risk</span>
+                          {isOnline ? devScore : 5} <span className="text-xs font-sans text-slate-400">/ 100 Risk</span>
                         </span>
                         <span className="text-[10px] text-slate-400 font-mono mt-0.5">
-                          Status: <span className={(devAi.prediction || 'Normal') === 'Normal' ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold animate-pulse'}>
-                            {(devAi.prediction || 'Normal') === 'Normal' ? '🟢 Safe' : '🔴 Threat'}
+                          Status: <span className={!isOnline || (devAi.prediction || 'Normal') === 'Normal' ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold animate-pulse'}>
+                            {!isOnline || (devAi.prediction || 'Normal') === 'Normal' ? '🟢 Safe' : '🔴 Threat'}
                           </span>
                         </span>
                       </div>
                       <span className={`px-2 py-1 rounded text-[10px] font-mono font-bold uppercase border ${
+                        !isOnline ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
                         devAi.severity?.toLowerCase() === 'critical' ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' :
                         devAi.severity?.toLowerCase() === 'high' ? 'bg-orange-500/10 border-orange-500/20 text-orange-400' :
                         devAi.severity?.toLowerCase() === 'medium' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                       }`}>
-                        {devAi.severity || 'Low'}
+                        {isOnline ? (devAi.severity || 'Low') : 'Low'}
                       </span>
                     </div>
                   </GlassCard>
