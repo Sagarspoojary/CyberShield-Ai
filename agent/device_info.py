@@ -8,19 +8,21 @@ from config import ID_FILE_PATH
 
 def get_or_create_device_id() -> str:
     """
-    Retrieves the persistent UUID from disk or generates a new one once.
+    Retrieves the persistent UUID from disk or generates a unique one per host.
     """
+    hostname = socket.gethostname().replace(".", "_")
     if os.path.exists(ID_FILE_PATH):
         try:
             with open(ID_FILE_PATH, "r") as f:
-                device_id = f.read().strip()
-                if device_id:
-                    return device_id
+                content = f.read().strip()
+                if content and not content.startswith("DEV-FF0D4F36"):
+                    return content
         except Exception:
             pass
 
-    # Generate persistent unique UUID
-    new_id = f"DEV-{str(uuid.uuid4())[:8].upper()}"
+    # Generate persistent unique UUID tied to machine hostname hash snippet
+    unique_seed = f"{hostname}-{uuid.uuid4().hex[:4]}".upper()
+    new_id = f"DEV-{unique_seed[:8]}"
     try:
         with open(ID_FILE_PATH, "w") as f:
             f.write(new_id)
@@ -61,5 +63,5 @@ def collect_device_info() -> dict:
         "processor": platform.processor() or platform.machine(),
         "ip": get_local_ip(),
         "status": "Online",
-        "last_seen": datetime.now(timezone.utc).isoformat(),
+        "last_seen": datetime.now(timezone.utc).isoformat()
     }
