@@ -605,74 +605,7 @@ export const Dashboard = () => {
 
 
 
-      {/* Phase 5: Collapsible AI History Table */}
-      <AiHistoryTable 
-        history={aiHistoryLogs} 
-        isLoading={aiLoading} 
-        isOffline={registeredDevices[0]?.status !== 'Online'} 
-      />
 
-      {/* Network Flow Feature Extraction Developer Panel */}
-      <NetworkFeaturePanel 
-        stats={networkStats} 
-        latestFeatures={latestNetworkFeatures} 
-      />
-
-      {/* AI Action Recommendations Row */}
-      <GlassCard tiltEffect={true} className="p-6 flex flex-col gap-4">
-        <div>
-          <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-cyan-400">
-            Automated Copilot Response
-          </span>
-          <h2 className="text-lg font-bold font-display text-slate-100">AI Recommendations</h2>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <button
-            onClick={() => showToast('Source IP 192.168.1.45 successfully blocked', 'success')}
-            className="p-4 rounded-xl border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/10 text-rose-400 flex items-center justify-between transition-all cursor-pointer group text-left"
-          >
-            <div className="flex flex-col">
-              <span className="font-bold text-xs font-display">Block Source IP</span>
-              <span className="text-[10px] text-slate-400 font-mono">Target: 192.168.1.45</span>
-            </div>
-            <Lock className="w-4 h-4 group-hover:scale-110 transition-transform" />
-          </button>
-
-          <button
-            onClick={() => showToast('Adaptive Firewall Policies re-enforced', 'info')}
-            className="p-4 rounded-xl border border-cyan-500/20 bg-cyan-500/5 hover:bg-cyan-500/10 text-cyan-400 flex items-center justify-between transition-all cursor-pointer group text-left"
-          >
-            <div className="flex flex-col">
-              <span className="font-bold text-xs font-display">Enable Firewall</span>
-              <span className="text-[10px] text-slate-400 font-mono">Rule Set #808 Active</span>
-            </div>
-            <ShieldCheck className="w-4 h-4 group-hover:scale-110 transition-transform" />
-          </button>
-
-          <button
-            onClick={() => showToast('Active telemetry polling enabled', 'info')}
-            className="p-4 rounded-xl border border-indigo-500/20 bg-indigo-500/5 hover:bg-indigo-500/10 text-indigo-400 flex items-center justify-between transition-all cursor-pointer group text-left"
-          >
-            <div className="flex flex-col">
-              <span className="font-bold text-xs font-display">Continue Monitoring</span>
-              <span className="text-[10px] text-slate-400 font-mono">Stream polling 1s</span>
-            </div>
-            <Activity className="w-4 h-4 group-hover:scale-110 transition-transform" />
-          </button>
-
-          <button
-            onClick={() => setIsReportModalOpen(true)}
-            className="p-4 rounded-xl border border-purple-500/20 bg-purple-500/5 hover:bg-purple-500/10 text-purple-400 flex items-center justify-between transition-all cursor-pointer group text-left"
-          >
-            <div className="flex flex-col">
-              <span className="font-bold text-xs font-display">Generate Incident Report</span>
-              <span className="text-[10px] text-slate-400 font-mono">Export PDF / JSON</span>
-            </div>
-            <FileCheck className="w-4 h-4 group-hover:scale-110 transition-transform" />
-          </button>
-        </div>
-      </GlassCard>
 
       {/* Modal for Report Generation */}
       <Modal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} title="Security Incident Report Generator">
