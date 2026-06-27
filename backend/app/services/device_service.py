@@ -9,6 +9,8 @@ logger = logging.getLogger("uvicorn")
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 DEVICES_FILE = os.path.join(DATA_DIR, "devices.json")
 
+from app.services.email_service import email_service
+
 class DeviceService:
     def __init__(self):
         self.telemetry_store: Dict[str, Any] = {}
@@ -30,6 +32,22 @@ class DeviceService:
         self.ai_history_store[device_id].insert(0, prediction_data)
         if len(self.ai_history_store[device_id]) > 50:
             self.ai_history_store[device_id] = self.ai_history_store[device_id][:50]
+
+        # Trigger Device-Specific Email Threat Alerts
+        pred_attack = prediction_data.get("prediction", prediction_data.get("attack", "Normal"))
+        if pred_attack != "Normal":
+            devices = self._read_devices()
+            dev_obj = next((d for d in devices if d.get("device_id") == device_id), None)
+            hostname = dev_obj.get("hostname", "Unknown Endpoint") if dev_obj else "Unknown Endpoint"
+            os_type = dev_obj.get("os", "").lower() if dev_obj else ""
+            
+            # Map exact email addresses based on user specification
+            if "laptop" in hostname.lower() or "windows" in os_type or "milan" in hostname.lower():
+                recipient = "milanraj.23cs071@sode-edu.in"
+            else:
+                recipient = "sagar.23cs125@sode-edu.in"
+
+            email_service.send_threat_alert(hostname, recipient, prediction_data)
 
     def get_latest_ai_prediction(self, device_id: str) -> Dict[str, Any]:
         return self.ai_latest_store.get(device_id, {
