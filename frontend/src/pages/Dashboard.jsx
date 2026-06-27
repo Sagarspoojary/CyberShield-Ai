@@ -225,70 +225,96 @@ export const Dashboard = () => {
 
       {/* Metric Stat Cards Bento Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: System Telemetry (CPU & RAM) */}
-        <GlassCard tiltEffect={true} className="p-5 flex flex-col justify-between gap-3">
-          <div className="flex justify-between items-start">
-            <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-slate-500">
-              System Hardware
-            </span>
-            <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-              <Cpu className="w-4.5 h-4.5" />
-            </div>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-2xl font-extrabold font-mono text-emerald-400">
-              {registeredDevices[0]?.status === 'Online' && telemetryData ? `${telemetryData.cpu_percent}%` : '--'} <span className="text-xs font-sans text-slate-400">CPU</span>
-            </span>
-            <span className="text-xs text-slate-400 font-mono mt-1">
-              RAM: {registeredDevices[0]?.status === 'Online' && telemetryData ? `${telemetryData.ram_percent}%` : '--'} | Disk: {registeredDevices[0]?.status === 'Online' && telemetryData ? `${telemetryData.disk_percent}%` : '--'}
-            </span>
-          </div>
-        </GlassCard>
+        {/* Helper active device reference */}
+        {(() => {
+          const activeDev = registeredDevices[selectedDeviceIndex] || registeredDevices[0];
+          const isOnline = activeDev?.status === 'Online';
+          const devHost = activeDev?.hostname || 'Device';
 
-        {/* Card 2: Live Network Packets Rate & Totals */}
-        <GlassCard tiltEffect={true} className="p-5 flex flex-col justify-between gap-3">
-          <div className="flex justify-between items-start">
-            <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-slate-500">
-              Network Packets
-            </span>
-            <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
-              <Activity className="w-4.5 h-4.5 animate-pulse" />
-            </div>
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <div className="flex items-center gap-3">
-              <span className="text-lg font-extrabold font-mono text-emerald-400">
-                ↓ {registeredDevices[0]?.status === 'Online' && telemetryData ? `${telemetryData.rx_packets_per_sec ?? 0} pkt/s` : '0 pkt/s'}
-              </span>
-              <span className="text-lg font-extrabold font-mono text-cyan-400">
-                ↑ {registeredDevices[0]?.status === 'Online' && telemetryData ? `${telemetryData.tx_packets_per_sec ?? 0} pkt/s` : '0 pkt/s'}
-              </span>
-            </div>
-            <span className="text-[11px] text-slate-400 font-mono mt-1">
-              Total: RX {telemetryData ? (telemetryData.formatted_packets_recv || telemetryData.packets_recv) : '--'} | TX {telemetryData ? (telemetryData.formatted_packets_sent || telemetryData.packets_sent) : '--'}
-            </span>
-          </div>
-        </GlassCard>
+          return (
+            <>
+              {/* Card 1: System Telemetry (CPU & RAM) */}
+              <GlassCard tiltEffect={true} className="p-5 flex flex-col justify-between gap-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-slate-500">
+                      System Hardware
+                    </span>
+                    <span className="text-[9px] font-mono text-cyan-400 font-bold truncate max-w-[120px]">
+                      {devHost}
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                    <Cpu className="w-4.5 h-4.5" />
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-2xl font-extrabold font-mono text-emerald-400">
+                    {isOnline && telemetryData ? `${telemetryData.cpu_percent}%` : '--'} <span className="text-xs font-sans text-slate-400">CPU</span>
+                  </span>
+                  <span className="text-xs text-slate-400 font-mono mt-1">
+                    RAM: {isOnline && telemetryData ? `${telemetryData.ram_percent}%` : '--'} | Disk: {isOnline && telemetryData ? `${telemetryData.disk_percent}%` : '--'}
+                  </span>
+                </div>
+              </GlassCard>
 
-        {/* Card 3: Live Network Telemetry Speeds */}
-        <GlassCard tiltEffect={true} className="p-5 flex flex-col justify-between gap-3">
-          <div className="flex justify-between items-start">
-            <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-slate-500">
-              Live Speed (DL / UL)
-            </span>
-            <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
-              <Zap className="w-4.5 h-4.5" />
-            </div>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-2xl font-extrabold font-mono text-slate-100">
-              {registeredDevices[0]?.status === 'Online' && telemetryData ? telemetryData.download_speed : '0 KB/s'}
-            </span>
-            <span className="text-xs text-indigo-400 font-mono mt-1">
-              Upload: {registeredDevices[0]?.status === 'Online' && telemetryData ? telemetryData.upload_speed : '0 KB/s'}
-            </span>
-          </div>
-        </GlassCard>
+              {/* Card 2: Live Network Packets Rate & Totals */}
+              <GlassCard tiltEffect={true} className="p-5 flex flex-col justify-between gap-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-slate-500">
+                      Network Packets
+                    </span>
+                    <span className="text-[9px] font-mono text-cyan-400 font-bold truncate max-w-[120px]">
+                      {devHost}
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+                    <Activity className="w-4.5 h-4.5 animate-pulse" />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg font-extrabold font-mono text-emerald-400">
+                      ↓ {isOnline && telemetryData ? `${telemetryData.rx_packets_per_sec ?? 0} pkt/s` : '0 pkt/s'}
+                    </span>
+                    <span className="text-lg font-extrabold font-mono text-cyan-400">
+                      ↑ {isOnline && telemetryData ? `${telemetryData.tx_packets_per_sec ?? 0} pkt/s` : '0 pkt/s'}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-slate-400 font-mono mt-1">
+                    Total: RX {telemetryData ? (telemetryData.formatted_packets_recv || telemetryData.packets_recv) : '--'} | TX {telemetryData ? (telemetryData.formatted_packets_sent || telemetryData.packets_sent) : '--'}
+                  </span>
+                </div>
+              </GlassCard>
+
+              {/* Card 3: Live Network Telemetry Speeds */}
+              <GlassCard tiltEffect={true} className="p-5 flex flex-col justify-between gap-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-slate-500">
+                      Live Speed (DL / UL)
+                    </span>
+                    <span className="text-[9px] font-mono text-indigo-400 font-bold truncate max-w-[120px]">
+                      {devHost}
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                    <Zap className="w-4.5 h-4.5" />
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-2xl font-extrabold font-mono text-slate-100">
+                    {isOnline && telemetryData ? telemetryData.download_speed : '0 KB/s'}
+                  </span>
+                  <span className="text-xs text-indigo-400 font-mono mt-1">
+                    Upload: {isOnline && telemetryData ? telemetryData.upload_speed : '0 KB/s'}
+                  </span>
+                </div>
+              </GlassCard>
+            </>
+          );
+        })()}
 
         {/* Card 4: Active Registered Endpoint Devices */}
         <GlassCard tiltEffect={true} className="p-5 flex flex-col justify-between gap-3 min-h-[140px]">
