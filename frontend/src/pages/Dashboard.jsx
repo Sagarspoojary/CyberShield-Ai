@@ -244,7 +244,7 @@ export const Dashboard = () => {
 
         <div className="flex gap-3">
           <GlassButton
-            onClick={() => showToast('AI Threat Model re-calibrated successfully', 'success')}
+            onClick={() => window.location.reload()}
             variant="secondary"
             className="px-4 py-2 text-xs font-mono"
             icon={RefreshCw}
