@@ -251,13 +251,6 @@ export const Dashboard = () => {
           >
             Re-Calibrate AI
           </GlassButton>
-          <GlassButton
-            onClick={() => setIsReportModalOpen(true)}
-            className="px-4 py-2 text-xs font-mono bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 shadow-[0_0_15px_rgba(6,182,212,0.3)]"
-            icon={FileCheck}
-          >
-            Generate Incident Report
-          </GlassButton>
         </div>
       </div>
 
@@ -391,7 +384,7 @@ export const Dashboard = () => {
             </div>
           </div>
 
-          <div className="w-full h-64">
+          <div className="w-full h-[450px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
@@ -419,6 +412,21 @@ export const Dashboard = () => {
                 <Area type="monotone" dataKey="threat" stroke="#a855f7" strokeWidth={2} fillOpacity={1} fill="url(#colorThreat)" />
               </AreaChart>
             </ResponsiveContainer>
+          </div>
+
+          {/* Export / Incident Report Action Footer */}
+          <div className="pt-3 border-t border-white/5 flex items-center justify-between">
+            <div className="flex flex-col">
+              <span className="text-xs font-bold font-mono text-slate-200">Export SOC Analysis Report</span>
+              <span className="text-[10px] font-mono text-slate-400">Generate structured PDF/JSON incident audit report for connected devices</span>
+            </div>
+            <GlassButton
+              onClick={() => setIsReportModalOpen(true)}
+              className="px-5 py-2.5 text-xs font-mono bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 shadow-[0_0_15px_rgba(6,182,212,0.3)]"
+              icon={FileCheck}
+            >
+              Generate Incident Report
+            </GlassButton>
           </div>
         </GlassCard>
 
