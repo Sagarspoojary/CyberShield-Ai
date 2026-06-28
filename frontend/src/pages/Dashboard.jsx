@@ -422,6 +422,16 @@ export const Dashboard = () => {
                         {isOnline ? (devAi.severity || 'Low') : 'Low'}
                       </span>
                     </div>
+
+                    {/* Live Small AI Summary Box */}
+                    <div className="pt-1.5 border-t border-white/10 flex flex-col gap-0.5">
+                      <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1">
+                        <CheckCircle2 className="w-2.5 h-2.5 text-cyan-400" /> Summary:
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-300 leading-tight">
+                        {isOnline ? summaryInfo.summary : 'Endpoint offline. Baseline active.'}
+                      </span>
+                    </div>
                   </GlassCard>
                 </div>
               </div>
