@@ -45,11 +45,6 @@ class DeviceService:
             risk = 78
             sev = "High"
             conf = 97.5
-        elif total_pkt < 20:
-            pred = "Port_Scan"
-            risk = 45
-            sev = "Medium"
-            conf = 95.0
         else:
             pred = "Normal"
             risk = 5
