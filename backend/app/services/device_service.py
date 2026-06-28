@@ -91,13 +91,14 @@ class DeviceService:
             
             # Map exact email addresses based on user specification
             if "mac" in hostname.lower() or "darwin" in os_type or "macos" in os_type or "sagar" in hostname.lower():
-                recipient = "sagarkappettu@gmail.com"
+                recipients = ["sagarkappettu@gmail.com", "sagar.23cs125@sode-edu.in"]
             elif "laptop" in hostname.lower() or "windows" in os_type or "milan" in hostname.lower():
-                recipient = "milanraj.23cs071@sode-edu.in"
+                recipients = ["milanraj.23cs071@sode-edu.in", "sagarkappettu@gmail.com"]
             else:
-                recipient = "sagarkappettu@gmail.com"
+                recipients = ["sagarkappettu@gmail.com"]
 
-            email_service.send_threat_alert(hostname, recipient, prediction_data)
+            for r in recipients:
+                email_service.send_threat_alert(hostname, r, prediction_data)
 
     def get_latest_ai_prediction(self, device_id: str) -> Dict[str, Any]:
         return self.ai_latest_store.get(device_id, {
