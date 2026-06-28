@@ -22,10 +22,10 @@ class EmailService:
         """
         now = time.time()
         attack_type = prediction_data.get("prediction", prediction_data.get("attack", "Unknown Threat"))
-        cache_key = f"{hostname}_{attack_type}"
+        cache_key = f"{hostname}_{attack_type}_{email_recipient}"
         
-        # 60-second cooldown per threat vector per device to prevent inbox flooding
-        if now - self.last_alert_time.get(cache_key, 0) < 60:
+        # 10-second cooldown per threat vector per recipient to ensure reliable delivery during testing
+        if now - self.last_alert_time.get(cache_key, 0) < 10:
             logger.info(f"Email alert cooldown active for {cache_key}. Skipping email dispatch.")
             return
 
