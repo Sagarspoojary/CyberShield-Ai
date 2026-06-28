@@ -1,77 +1,89 @@
-# Aether - Premium Hackathon Starter Template
+# 🛡️ CyberShield AI: Real-Time SOC Threat Intelligence Platform
 
-A production-ready hackathon template using **React + Vite + Tailwind CSS v4** for the frontend and **Node.js (Express)** for the backend.
+![CyberShield AI Banner](https://img.shields.io/badge/CyberShield-SOC_Threat_Intelligence-06b6d4?style=for-the-badge&logo=shield&logoColor=white)
+![React](https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 
-## Project Structure
-
-```
-project/
-├── frontend/             # Vite + React Client App
-│   ├── src/
-│   │   ├── components/   # Glassmorphic Apple Vision Pro UI components
-│   │   ├── config/       # Firebase config
-│   │   ├── context/      # Theme, Toast, and Auth contexts
-│   │   └── pages/        # Dashboard (Bento layout), Landing, Login, Profile
-│   └── .env.example
-├── backend/              # Express JS REST Server
-│   ├── src/
-│   │   ├── config/       # Firebase Admin config
-│   │   ├── controllers/  # API router endpoints business logic
-│   │   ├── middleware/   # JWT verify auth & error handling middlewares
-│   │   ├── routes/       # Auth routes path registry
-│   │   └── utils/        # Success/Error standard response helpers
-│   └── .env.example
-└── README.md
-```
-
-## Features
-
-1. **Spatial UI (Apple Vision Pro inspired)**: Glassmorphism layout grids, spring-tilt 3D effects (`framer-motion`), and blurred gradient mesh.
-2. **Generative Particles**: Ambient, floating glowing nodes and slow organic blobs.
-3. **Kinetic Typography**: Non-distracting, infinite-scrolling marquees in the background.
-4. **Dual Authentication Pipeline**:
-   - Out-of-the-box support for **Firebase Auth** (Email + Google Sign In).
-   - **Mock Auth Fallback Bypass**: Runs immediately without Firebase API keys configured for instant interface previewing.
-5. **Secure Express Backend**: Configured with CORS, Helmet, Morgan, and Firebase Admin SDK token authentication validator.
+**CyberShield AI** is an end-to-end, real-time Security Operations Center (SOC) Threat Intelligence platform engineered to continuously monitor cross-platform endpoint devices (macOS, Windows, Linux). By capturing high-frequency system hardware and network IO packet metrics, CyberShield AI classifies live packet streams into distinct threat vectors (Port Scans, Brute Force, Web Crawling, and HTTP DDoS) and automatically dispatches device-specific email alerts to assigned security engineers.
 
 ---
 
-## Getting Started
+## ✨ Key Features
 
-### 1. Backend Setup
-
-1. Open terminal inside the `/backend` folder:
-   ```bash
-   cd backend
-   npm install
-   ```
-2. Set up environment variables:
-   Copy `.env.example` to `.env`
-   - Adjust `PORT` if needed (default: `5000`).
-   - Place your Firebase Service Account JSON file path in `FIREBASE_SERVICE_ACCOUNT_PATH` to enable remote Token verification.
-3. Start the server:
-   ```bash
-   npm run dev
-   ```
-
-### 2. Frontend Setup
-
-1. Open terminal inside the `/frontend` folder:
-   ```bash
-   cd frontend
-   npm install
-   ```
-2. Set up environment variables:
-   Copy `.env.example` to `.env`
-   - Paste your client-side Firebase API keys under `VITE_FIREBASE_*`.
-3. Start Vite dev server:
-   ```bash
-   npm run dev
-   ```
-4. Access the web interface at `http://localhost:5173`.
+- **🌐 Cross-Platform Endpoint Agents**: Lightweight Python agents monitoring host hardware (CPU, RAM, Disk) and bidirectional network traffic (`rx_pkt/s`, `tx_pkt/s`).
+- **⚡ Side-by-Side Multi-Device Telemetry**: Dedicated 4-card telemetry displays (Hardware, Packets, Speed, AI Risk Evaluation) per registered endpoint in a single futuristic glassmorphism dashboard.
+- **🤖 Dynamic AI Risk Evaluation Engine**: Real-time threat classification based on exact packet rate bands:
+  - 🟢 **Normal** (`20 – 199 pkts/s`): Standard baseline traffic (5/100 Low Risk).
+  - 🔍 **Port Scan** (`< 20 pkts/s`): Host scanning attempt identified (45/100 Medium Risk).
+  - ⚡ **Brute Force** (`200 – 499 pkts/s`): Repeated socket authentication loops (78/100 High Risk).
+  - 🕷️ **Web Crawling** (`500 – 1,999 pkts/s`): Multi-page scraping across documentation routes (35/100 Low Risk).
+  - 🔴 **HTTP DDoS** (`2,000+ pkts/s`): Massive packet flood threatening socket availability (98/100 Critical Risk).
+- **📬 Targeted Automated Email Alerts**: Automated SMTP dispatching sending incident details directly to assigned security administrators upon threat detection:
+  - 🍏 **`Mac.lan` (macOS)** $\rightarrow$ Dispatches to `sagarkappettu@gmail.com` & `sagar.23cs125@sode-edu.in`.
+  - 💻 **`LAPTOP-6MMH740M` (Windows)** $\rightarrow$ Dispatches to `milanraj.23cs071@sode-edu.in`.
+- **📄 Instant PDF Incident Auditing**: One-click structured SOC report exporter and live AI model recalibration trigger.
 
 ---
 
-## Mock Mode Bypass
-If you do not have Firebase keys ready, you can start hacking immediately. Leaving client/server Firebase parameters blank activates **Mock Mode**.
-- Login with any email/password (e.g., `hacker@domain.com` / `password123`) or click **Sign in with Google** to directly enter the interactive Bento Dashboard.
+## 🏗️ System Architecture & Technology Stack
+
+```
+   [ Endpoint Agent (macOS / Windows) ]
+                  │
+   (Live Telemetry & Packet Sampling via psutil)
+                  ▼
+ [ Central FastAPI SOC Backend (Render Cloud) ]
+       │                                  │
+(AI Classification Engine)     (SMTP Alert Dispatcher)
+       │                                  │
+       ▼                                  ▼
+ [ React + Vite SOC Dashboard ]  [ Security Engineer Inbox ]
+```
+
+- **Frontend**: React 18, Vite, Lucide React, Recharts, Framer Motion, Tailwind CSS / Vanilla Glassmorphism.
+- **Backend API**: FastAPI (Python), Uvicorn, Pydantic, SMTP Email Service.
+- **Agent Layer**: Python 3, `psutil`, `requests`, `threading`, `socket`.
+
+---
+
+## 🛠️ Installation & Quick Start
+
+### 1. Prerequisites
+- Python 3.10+
+- Node.js 18+
+
+### 2. Run Central Backend (FastAPI)
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+### 3. Run SOC Operations Dashboard (React Frontend)
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Access dashboard locally at `http://localhost:5173`.
+
+### 4. Start Endpoint Agent (Client Machine)
+```bash
+python agent/agent.py
+```
+
+---
+
+## 🚀 Live Deployments
+
+- 🌐 **Backend API**: `https://cybershield-backend-1xwy.onrender.com/api/v1`
+- 💻 **SOC Dashboard**: `https://cyber-shield-ai-rho.vercel.app`
+
+---
+
+## 📝 License
+This project is open-source and developed for Hackathon Security Operations Center (SOC) Innovations.
