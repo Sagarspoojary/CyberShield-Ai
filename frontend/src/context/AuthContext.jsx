@@ -37,15 +37,18 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (!isFirebaseConfigured) {
-      // Mock initialization if Firebase configuration is missing
-      console.warn("Using mock user since Firebase configuration is missing.");
+      // Default to active SecOps Operator user if Firebase configuration is not used
       const mockUserStr = localStorage.getItem('mock_user');
-      if (mockUserStr) {
-        const parsed = JSON.parse(mockUserStr);
-        setUser(parsed);
-        setToken("mock-jwt-token-12345");
-        axios.defaults.headers.common['Authorization'] = `Bearer mock-jwt-token-12345`;
-      }
+      const defaultUser = mockUserStr ? JSON.parse(mockUserStr) : {
+        uid: "VkuavyHr2y...",
+        email: "sagar.23cs125@sode-edu.in",
+        displayName: "Sagar S",
+        role: "SecOps Operator",
+        photoURL: ""
+      };
+      setUser(defaultUser);
+      setToken("mock-jwt-token-12345");
+      axios.defaults.headers.common['Authorization'] = `Bearer mock-jwt-token-12345`;
       setLoading(false);
       return;
     }
