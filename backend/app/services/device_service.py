@@ -90,7 +90,9 @@ class DeviceService:
             os_type = dev_obj.get("os", "").lower() if dev_obj else ""
             
             # Map exact email addresses based on user specification
-            if "laptop" in hostname.lower() or "windows" in os_type or "milan" in hostname.lower():
+            if "mac" in hostname.lower() or "darwin" in os_type or "macos" in os_type or "sagar" in hostname.lower():
+                recipient = "sagar.23cs125@sode-edu.in"
+            elif "laptop" in hostname.lower() or "windows" in os_type or "milan" in hostname.lower():
                 recipient = "milanraj.23cs071@sode-edu.in"
             else:
                 recipient = "sagar.23cs125@sode-edu.in"
