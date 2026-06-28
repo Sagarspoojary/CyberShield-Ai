@@ -13,7 +13,7 @@ class EmailService:
         self.smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
         self.smtp_port = int(os.getenv("SMTP_PORT", "587"))
         self.smtp_user = os.getenv("SMTP_USER", "sagarkappettu@gmail.com")
-        self.smtp_password = os.getenv("SMTP_PASSWORD", "czxwovdsrrfn")
+        self.smtp_password = os.getenv("SMTP_PASSWORD", "czxwovdsrrfn").replace(" ", "").strip()
         self.last_alert_time: Dict[str, float] = {}
 
     def send_threat_alert(self, hostname: str, email_recipient: str, prediction_data: Dict[str, Any]):
